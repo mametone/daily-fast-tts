@@ -1,5 +1,10 @@
 # 日常高速TTS - 依存関係
 # Python 3.10+ 推奨
+# 必須: pyttsx3 のみ。SBV2 利用時は requests / pydub も使用。
 
 pyttsx3>=2.90
 pyperclip>=1.8.2
+
+# SBV2 エンジン用（--engine sbv2 のとき）
+requests>=2.28.0
+pydub>=0.25.0

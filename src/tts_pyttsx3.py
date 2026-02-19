@@ -1,13 +1,16 @@
 """
 pyttsx3 を使った軽量TTS実装。
-日本語音声（Japanese / Mei 等）を自動選択し、config の rate/volume を適用する。
+config の rate / volume / 音声ID を適用。音声ID未指定時は日本語を名前で自動選択。
 """
+import logging
 from pathlib import Path
 
 import pyttsx3
 
-from .config import DEFAULT_RATE, DEFAULT_VOLUME
+from .config import DEFAULT_RATE, DEFAULT_VOLUME, PYTTSX3_VOICE_ID
 from .tts_base import TextToSpeechEngine
+
+logger = logging.getLogger(__name__)
 
 
 def _select_japanese_voice(engine: pyttsx3.Engine) -> None:
@@ -20,6 +23,7 @@ def _select_japanese_voice(engine: pyttsx3.Engine) -> None:
             engine.setProperty("voice", voice.id)
             return
     # 日本語が見つからなければ最初の音声のまま（フォールバック）
+    logger.debug("日本語音声が見つからず、デフォルト音声を使用します")
 
 
 class Pyttsx3Engine(TextToSpeechEngine):
@@ -27,11 +31,13 @@ class Pyttsx3Engine(TextToSpeechEngine):
 
     def __init__(
         self,
-        rate: int = DEFAULT_RATE,
-        volume: float = DEFAULT_VOLUME,
+        rate: int | None = None,
+        volume: float | None = None,
+        voice_id: str | None = None,
     ) -> None:
-        self._rate = rate
-        self._volume = volume
+        self._rate = rate if rate is not None else DEFAULT_RATE
+        self._volume = volume if volume is not None else DEFAULT_VOLUME
+        self._voice_id = voice_id if voice_id is not None else PYTTSX3_VOICE_ID
         self._engine: pyttsx3.Engine | None = None
 
     def _get_engine(self) -> pyttsx3.Engine:
@@ -39,7 +45,10 @@ class Pyttsx3Engine(TextToSpeechEngine):
             self._engine = pyttsx3.init()
             self._engine.setProperty("rate", self._rate)
             self._engine.setProperty("volume", self._volume)
-            _select_japanese_voice(self._engine)
+            if self._voice_id:
+                self._engine.setProperty("voice", self._voice_id)
+            else:
+                _select_japanese_voice(self._engine)
         return self._engine
 
     def speak(self, text: str) -> None:
